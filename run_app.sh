@@ -19,16 +19,16 @@ cd server
 if [ -d "venv" ]; then
     source venv/bin/activate
 fi
-python3 -m uvicorn main:app --reload --host 127.0.0.1 --port 8000 &
+python3 -m uvicorn main:app --reload --host 127.0.0.1 --port 8000 > backend.log 2>&1 &
 BACKEND_PID=$!
 
 # Wait for Backend to start
-echo "Waiting for Backend to initialize..."
+echo "Waiting 5s for Backend to initialize..."
 sleep 5
 
 # Start Backend Worker
 echo "Starting Voice Agent Worker..."
-python3 agent/voice_agent.py dev &
+python3 agent/voice_agent.py dev > worker.log 2>&1 &
 WORKER_PID=$!
 
 # Start Frontend

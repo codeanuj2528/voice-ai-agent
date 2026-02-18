@@ -26,7 +26,8 @@ async def create_token(request: TokenRequest):
     
     The token is a JWT signed with our LiveKit API key/secret pair.
     The frontend uses this token to authenticate with the LiveKit server
-    and join the WebRTC room.
+    and join the WebRTC room. The agent is auto-dispatched by LiveKit
+    when a participant joins a room.
     """
     token = (
         AccessToken(settings.livekit_api_key, settings.livekit_api_secret)
@@ -43,5 +44,5 @@ async def create_token(request: TokenRequest):
 
     return TokenResponse(
         token=jwt_token,
-        livekit_url=settings.livekit_url.replace("ws://", "ws://").replace("wss://", "wss://"),
+        livekit_url=settings.livekit_url,
     )

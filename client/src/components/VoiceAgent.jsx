@@ -13,9 +13,20 @@ import { Track } from 'livekit-client';
 import { getToken } from '../lib/api';
 import { Mic, MicOff, Phone, PhoneOff, Loader2 } from 'lucide-react';
 
-function AgentVisualizer({ onTranscriptUpdate, onRagSourcesUpdate }) {
+function AgentVisualizer({ onTranscriptUpdate, onRagSourcesUpdate, onConnectionTimeout }) {
     const { state, audioTrack, agent } = useVoiceAssistant();
     const { localParticipant } = useLocalParticipant();
+
+    // Auto-retry if stuck in 'connecting' for too long
+    useEffect(() => {
+        if (state === 'connecting' || state === 'initializing') {
+            const timeout = setTimeout(() => {
+                console.warn('Connection timeout — retrying...');
+                if (onConnectionTimeout) onConnectionTimeout();
+            }, 12000); // 12s timeout
+            return () => clearTimeout(timeout);
+        }
+    }, [state, onConnectionTimeout]);
 
     // Track agent transcription — audioTrack from useVoiceAssistant IS the agent's track
     const agentTranscription = useTrackTranscription(audioTrack);
@@ -117,7 +128,8 @@ export default function VoiceAgent({ onTranscriptUpdate, onRagSourcesUpdate }) {
         setIsConnecting(true);
         setError(null);
         try {
-            const data = await getToken('voice-agent-room', `user-${Date.now()}`);
+            const roomName = `voice-demo-${Date.now()}`;
+            const data = await getToken(roomName, `user-${Date.now()}`);
             setToken(data.token);
             setLivekitUrl(data.livekit_url);
             setIsConnected(true);
@@ -133,6 +145,18 @@ export default function VoiceAgent({ onTranscriptUpdate, onRagSourcesUpdate }) {
         setToken(null);
         setLivekitUrl(null);
     }, []);
+
+    // Auto-retry: disconnect current stuck session and reconnect fresh
+    const handleRetry = useCallback(() => {
+        console.log('Retrying connection...');
+        setIsConnected(false);
+        setToken(null);
+        setLivekitUrl(null);
+        // Short delay then reconnect
+        setTimeout(() => {
+            handleConnect();
+        }, 500);
+    }, [handleConnect]);
 
     return (
         <div className="flex flex-col items-center gap-6 w-full">
@@ -162,11 +186,16 @@ export default function VoiceAgent({ onTranscriptUpdate, onRagSourcesUpdate }) {
                     audio={true}
                     video={false}
                     onDisconnected={handleDisconnect}
+                    onError={(err) => {
+                        setError(err?.message || 'Connection error');
+                        handleDisconnect();
+                    }}
                     className="w-full"
                 >
                     <AgentVisualizer
                         onTranscriptUpdate={onTranscriptUpdate}
                         onRagSourcesUpdate={onRagSourcesUpdate}
+                        onConnectionTimeout={handleRetry}
                     />
 
                     {/* Controls */}
