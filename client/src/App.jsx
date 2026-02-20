@@ -21,7 +21,7 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-(--color-background) flex flex-col">
+    <div className="h-screen bg-(--color-background) flex flex-col">
       {/* Header */}
       <header className="border-b border-(--color-border) bg-(--color-surface)/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
@@ -42,17 +42,17 @@ function App() {
       </header>
 
       {/* Main Content — Three Panel Layout */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+      <main className="flex-1 min-h-0 max-w-7xl mx-auto w-full px-6 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full min-h-0">
           {/* Left Sidebar — Config & KB */}
-          <div className="lg:col-span-3 flex flex-col gap-4">
+          <div className="lg:col-span-3 flex flex-col gap-4 h-full flex flex-col">
             {/* Prompt Editor Card */}
             <div className="bg-(--color-surface) border border-(--color-border) rounded-(--radius-xl) p-4">
               <PromptEditor />
             </div>
 
             {/* Document Upload Card */}
-            <div className="bg-(--color-surface) border border-(--color-border) rounded-(--radius-xl) p-4">
+            <div className="flex-1 bg-(--color-surface) border border-(--color-border) rounded-(--radius-xl) p-4">
               <DocumentUpload />
             </div>
           </div>
@@ -68,14 +68,14 @@ function App() {
           </div>
 
           {/* Right Sidebar — Transcripts & Sources */}
-          <div className="lg:col-span-3 flex flex-col gap-4">
+          <div className="lg:col-span-3 h-full min-h-0 flex flex-col gap-4">
             {/* Transcript Card */}
-            <div className="bg-(--color-surface) border border-(--color-border) rounded-(--radius-xl) p-4 flex-1">
+            <div className=" bg-(--color-surface) border border-(--color-border) rounded-(--radius-xl) p-4 flex-1 min-h-0">
               <TranscriptView transcriptData={transcriptData} />
             </div>
 
             {/* RAG Sources Card */}
-            <div className="bg-(--color-surface) border border-(--color-border) rounded-(--radius-xl) p-4">
+            <div className="bg-(--color-surface) border border-(--color-border) rounded-(--radius-xl) p-4 flex-1 min-h-0">
               <RagSources sources={ragSources} />
             </div>
           </div>
