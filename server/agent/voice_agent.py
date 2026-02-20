@@ -15,8 +15,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from livekit import agents, rtc
-from livekit.agents import AgentSession, Agent, RoomInputOptions
+from livekit.agents import AgentServer, AgentSession, Agent, llm, room_io
 from livekit.agents.voice import MetricsCollectedEvent
+from livekit.agents.voice.room_io import RoomOptions
 from livekit.plugins import groq, silero, deepgram
 
 from config import settings
@@ -44,6 +45,17 @@ class VoiceAgent(Agent):
             instructions=_get_system_prompt(),
         )
         self._room = room
+
+    async def llm_node(
+        self,
+        chat_ctx: llm.ChatContext,
+        tools: list[llm.Tool],
+        model_settings: agents.ModelSettings,
+    ):
+        """Override to truncate conversation history before each LLM call."""
+        # Keep only last 10 items (~5 turns) to prevent unbounded token growth
+        chat_ctx.truncate(max_items=10)
+        return Agent.default.llm_node(self, chat_ctx, tools, model_settings)
 
     @agents.function_tool()
     async def search_knowledge_base(self, query: str) -> str:
@@ -84,31 +96,48 @@ async def entrypoint(ctx: agents.JobContext):
     logger.info(f"Agent connecting to room: {ctx.room.name}")
 
     session = AgentSession(
-        stt=groq.STT(
-            model="whisper-large-v3-turbo",
-            language="en",
-            api_key=settings.groq_api_key,
+        stt=deepgram.STT(
+            api_key=settings.deepgram_api_key,
+            model="nova-3",
+            language="en-US",
+            interim_results=False,
+            endpointing_ms=300,
+            no_delay=False,
+            vad_events=False,
+            punctuate=True,
+            smart_format=True,
+            filler_words=False,
         ),
         llm=groq.LLM(
             model="llama-3.1-8b-instant",
-            temperature=0.7,
+            temperature=0.4,
+            max_completion_tokens=150,
             api_key=settings.groq_api_key,
         ),
         tts=deepgram.TTS(
             api_key=settings.deepgram_api_key,
         ),
-        vad=silero.VAD.load(),
+        vad=silero.VAD.load(
+            min_speech_duration=0.2,
+            min_silence_duration=0.9,
+            prefix_padding_duration=0.15,
+            activation_threshold=0.72,
+            deactivation_threshold=0.62,
+        ),
     )
 
     # Log metrics for observability
     @session.on("metrics_collected")
     def on_metrics(ev: MetricsCollectedEvent):
+        # Deepgram streaming emits periodic STT usage metrics; suppress noisy idle logs.
+        if getattr(ev.metrics, "type", "") == "stt_metrics":
+            return
         agents.metrics.log_metrics(ev.metrics)
 
     await session.start(
         room=ctx.room,
         agent=VoiceAgent(room=ctx.room),
-        room_input_options=RoomInputOptions(),
+        room_options=room_io.RoomOptions(),
     )
 
     # Greet the user
@@ -117,12 +146,17 @@ async def entrypoint(ctx: agents.JobContext):
     )
 
 
+# server = AgentServer()
+
 if __name__ == "__main__":
+    # agents.cli.run_app(server)
     agents.cli.run_app(
         agents.WorkerOptions(
             entrypoint_fnc=entrypoint,
+            agent_name=settings.livekit_agent_name,
             api_key=settings.livekit_api_key,
             api_secret=settings.livekit_api_secret,
             ws_url=settings.livekit_url,
+            num_idle_processes=1,
         ),
     )

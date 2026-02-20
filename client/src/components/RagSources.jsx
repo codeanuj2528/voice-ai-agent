@@ -9,7 +9,7 @@ export default function RagSources({ sources }) {
     };
 
     return (
-        <div className="flex flex-col gap-3">
+        <div className="h-full flex flex-col gap-3">
             {/* Header */}
             <div className="flex items-center gap-2">
                 <BookOpen size={16} className="text-(--color-accent)" />
@@ -22,9 +22,9 @@ export default function RagSources({ sources }) {
             </div>
 
             {/* Sources */}
-            <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto">
+            <div className="flex-1 min-h-0 flex flex-col gap-2 overflow-y-auto">
                 {(!sources || sources.length === 0) ? (
-                    <div className="flex flex-col items-center justify-center h-24 text-(--color-text-dim)">
+                    <div className="flex flex-col items-center justify-center h-full text-(--color-text-dim)">
                         <BookOpen size={24} className="mb-2 opacity-50" />
                         <span className="text-xs">Referenced sources will appear here</span>
                     </div>

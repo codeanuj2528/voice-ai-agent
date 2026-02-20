@@ -29,10 +29,18 @@ async function apiFetch(endpoint, options = {}) {
 }
 
 // Token
-export async function getToken(roomName = 'voice-agent-room', participantName = 'user') {
+export async function getToken(
+  roomName = 'voice-agent-room',
+  participantName = 'user',
+  agentName = 'voice-agent',
+) {
   return apiFetch('/token', {
     method: 'POST',
-    body: JSON.stringify({ room_name: roomName, participant_name: participantName }),
+    body: JSON.stringify({
+      room_name: roomName,
+      participant_name: participantName,
+      agent_name: agentName,
+    }),
   });
 }
 

@@ -76,25 +76,36 @@ async def _get_embeddings(texts: list[str]) -> list[list[float]]:
 
 
 async def _get_query_embedding(query: str) -> list[float]:
-    """Generate embedding for a search query."""
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            JINA_API_URL,
-            headers={
-                "Authorization": f"Bearer {settings.jina_api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": JINA_EMBEDDING_MODEL,
-                "input": [query],
-                "task": "retrieval.query",
-                "dimensions": JINA_EMBEDDING_DIM,
-            },
-            timeout=30.0,
-        )
-        response.raise_for_status()
-        data = response.json()
-        return data["data"][0]["embedding"]
+    """Generate embedding for a search query (with retry)."""
+    last_error = None
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    JINA_API_URL,
+                    headers={
+                        "Authorization": f"Bearer {settings.jina_api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": JINA_EMBEDDING_MODEL,
+                        "input": [query],
+                        "task": "retrieval.query",
+                        "dimensions": JINA_EMBEDDING_DIM,
+                    },
+                    timeout=45.0,
+                )
+                response.raise_for_status()
+                data = response.json()
+                return data["data"][0]["embedding"]
+        except (httpx.ReadTimeout, httpx.ConnectTimeout) as e:
+            last_error = e
+            if attempt < 2:
+                import asyncio
+                await asyncio.sleep(1)
+                continue
+            raise
+    raise last_error
 
 
 def _load_documents(content: bytes, ext: str, filename: str) -> list[Document]:

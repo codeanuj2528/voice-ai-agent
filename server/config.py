@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     livekit_url: str = os.getenv("LIVEKIT_URL", "ws://localhost:7880")
     livekit_api_key: str = os.getenv("LIVEKIT_API_KEY", "devkey")
     livekit_api_secret: str = os.getenv("LIVEKIT_API_SECRET", "secret")
+    livekit_agent_name: str = os.getenv("LIVEKIT_AGENT_NAME", "voice-agent")
 
     # Deepgram API
     deepgram_api_key: str = os.getenv("DEEPGRAM_API_KEY", "")
