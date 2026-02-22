@@ -206,18 +206,6 @@ function ConnectedMicPanel({ session, isPushToTalkActive, setIsPushToTalkActive 
         await session.room.switchActiveDevice('audioinput', deviceId, true);
     }, [session.room]);
 
-    // Auto-retry: disconnect current stuck session and reconnect fresh
-    const handleRetry = useCallback(() => {
-        console.log('Retrying connection...');
-        setIsConnected(false);
-        setToken(null);
-        setLivekitUrl(null);
-        // Short delay then reconnect
-        setTimeout(() => {
-            handleConnect();
-        }, 500);
-    }, [handleConnect]);
-
     return (
         <div className="w-full mt-4 rounded-(--radius-lg) border border-(--color-border) bg-(--color-surface) p-4">
             <div className="flex items-center justify-between gap-3">
